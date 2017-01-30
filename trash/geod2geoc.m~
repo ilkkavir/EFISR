@@ -1,0 +1,30 @@
+function [lat_out,lon_out,r_out] = geod2geoc(lat,lon,alt)
+
+int geod2geoc(double lat, double lon, double alt, double rtp[]) {
+
+    double a,b,f,a2,b2,st,ct,one,two,three,rho,cd,sd;
+    double r,theta;
+
+    a = 6378.1370;/* semi-major axis */
+    f = 1./298.257223563;/* flattening */
+    b = a*(1. -f);/* semi-minor axis */
+    a2 = a*a;
+    b2 = b*b;
+    theta = (90. -lat)*DTOR;/* colatitude in radians   */
+    st = sin(theta);
+    ct = cos(theta);
+    one = a2*st*st;
+    two = b2*ct*ct;
+    three = one + two;
+    rho = sqrt(three);/* [km] */
+    r = sqrt(alt*(alt+2*rho) + (a2*one + b2*two)/three);    /* [km] ...
+    */
+    cd = (alt+rho)/r;
+    sd = (a2-b2)/rho *ct*st/r;
+
+    rtp[0] = r/RE;/* units of RE */
+    rtp[1] = acos(ct*cd - st*sd);
+    rtp[2] = lon*DTOR;
+
+    return (0);
+}

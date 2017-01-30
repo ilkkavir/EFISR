@@ -1,0 +1,150 @@
+function velocity = fitPlasmaVelocities( tres , startTime , gateType ...
+                                         , gateLims , maxDiff , ViBzero , varargin)
+%
+% function velocity = fitPlasmaVelocities( tres , gateType ,
+%                     gateLims ,  maxDiff , ViPar0 , dpath [,
+%                     dpath2 , ...])
+%
+%
+% Fit plasma velocity vectors to incoherent scatter
+% measurements. The data can be either from a multistatic radar
+% system, from a scanning monostatic system, two or more
+% independent radars, or from any combination of these.
+%
+% INPUT:
+%   tres       time resolution in s, OR a vector of integration
+%              limits as unix times
+%   startTime  analysis start time as unix time
+%   gateType   type of gating, 'h' or 'mlat'
+%   gateLims   gate limits, km if gateType='h', degrees if gateType='mlat'
+%   maxDiff    tolerance for common volume selection. degrees in
+%              geomagnetic coordinates
+%   ViBzero    logical, 0 for normal fit, 1 to force parallel
+%              velocity to zero
+%   dpath      data path. arbitrary number of paths to GUISDAP
+%              output directories and/or individual files
+%
+% OUTPUT:
+%
+%  velocity  a struct with fields
+%
+%   vel       nGate x nTime x 3 array of velocity vectors (m/s)
+%   velcov    nGate x nTime x 3 x 3 array of error covariance
+%             matrices (m^2/s^2)
+%   mlat      nGate x nTime array of geomagnetic latitudes (deg)
+%   mlon      nGate x nTime array of geomagnetic longitudes (deg)
+%   glat      nGate x nTime array of geodetic (wgs84) latitudes (deg)
+%   glon      nGate x nTime array of geodetic (wgs84) longitudes (deg)
+%   height    nGate x nTime array of heights (km)
+%   time      nGate x nTime array of times (unix time)
+%   mlt       nGate x nTime array of magnetic local times (hours)
+%   Bned      nGate x nTime x 3 array of magnetic field vectors. nT
+%             in local cartesian north-east-down coordinates.
+%
+% IV 2016
+%
+
+% read the velocity data
+[ v , verr , status , chisqr , ts , te , mlt , llhT , llhR , azelR ...
+  , r , h , phi , site , ecefS , llhgS , llhmS , kS , B ] = ...
+    readVelocitiesGUISDAP(varargin{:});
+
+% time-slices, indTime contains a time-slice index for each data point
+[ indTime , nTime ] = integrationLimitsTime( te , tres , startTime );
+
+% gates, indGate contains a gate index for each data point
+[ indGate , nGate ] = integrationLimitsGate( llhgS , llhmS , gateType ...
+                                             , gateLims );
+% allocate output arrays
+vel = NaN( nGate , nTime , 3 );
+velcov = NaN( nGate , nTime , 3 , 3 );
+mlat = NaN( nGate ,  nTime );
+mlon = NaN( nGate , nTime );
+glat = NaN( nGate ,  nTime );
+glon = NaN( nGate , nTime );
+Bned = NaN( nGate , nTime , 3);
+height = NaN( nGate , nTime );
+time = NaN( nGate , nTime);
+mltime = NaN( nGate , nTime );
+
+% loop over time slices
+for iT = 1:nTime
+
+    % loop over gates
+    for iG = 1:nGate
+
+        % pick data from the correct time slice and gate, do not
+        % use unsuccessful fits
+        indGT =  ( indTime == iT ) & ( indGate == iG ) & ~status;
+
+
+        % limit the data to magnetic latitudes and longitudes
+        % covered by all sites
+        indCV = integrationLimitsCommonVolume( llhmS , site , maxDiff ...
+                                               , indGT );
+        if ~any(indCV)
+            continue
+        end
+        % pick the velocity data, standard deviations and k-vectors
+        VGT = v(indCV);
+        VerrGT  = verr(indCV);
+        kGT = kS(indCV,:);
+        % magnetic field directions
+        BGT = B(indCV,:);
+        % ecef coordinates
+        ecefSGT = ecefS(indCV,:);
+        % geodetic latitude, longitude, height
+        llhgSGT = llhgS(indCV,:);
+
+        % conversion to local geomagnetic coordinates
+        kBGT = ecef2localMagnetic( kGT , ecefSGT , llhgSGT , BGT );
+
+
+        % if parallel velocity is forced to zero
+        if ViBzero
+            % a zero-meeasurement
+            VGT = [ VGT ; 0 ];
+            % a small standard deviation (1 mm/s)
+            VerrGT = [ VerrGT ; 1e-3 ];
+            % magnetic field direction, we are in geomagnetic
+            % coordinates now!
+            kBGT = [ kBGT ; [0 0 1] ];
+        end
+
+        % velocity in magnetic coordinates
+        [ vel(iG,iT,:) , velcov(iG,iT,:,:) ] = plasmaVelocityVector( ...
+            VGT , VerrGT , kBGT );
+
+        % coordinates
+        mlat(iG,iT) = mean( llhmS(indCV,1) );
+        mlon(iG,iT) = mean( llhmS(indCV,2) );
+        glat(iG,iT) = mean( llhgS(indCV,1) );
+        glon(iG,iT) = mean( llhgS(indCV,2) );
+        height(iG,iT) = mean( llhgS(indCV,3) )/1000;
+
+        % magnetic field
+        Bned(iG,iT,:) = mean(B(indCV,:));
+
+        % times
+        time(iG,iT) = (mean(te(indCV)) + mean(ts(indCV)))/2;
+        mltime(iG,iT) =  mean(mlt(indCV));
+
+    end
+
+end
+
+velocity = struct();
+velocity.vel = vel;
+velocity.velcov = velcov;
+velocity.mlat = mlat;
+velocity.mlon = mlon;
+velocity.glat = glat;
+velocity.glon = glon;
+velocity.height = height;
+velocity.time = time;
+velocity.mlt = mltime;
+velocity.Bned = Bned;
+
+
+
+end

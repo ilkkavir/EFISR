@@ -1,0 +1,1 @@
+function [kB] = ecef2localMagnetic( k , ecefS , llhgS , Bned )

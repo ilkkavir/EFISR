@@ -1,0 +1,1 @@
+function [lat_out,lon_out,r_out] = geoc2geod(lat,lon,alt,RE)

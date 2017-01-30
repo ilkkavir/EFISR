@@ -1,0 +1,23 @@
+function EfVi = fitEfieldVi( tres , starttime , gateType , gaetLims ...
+                             , maxDiff , ViBzero , varargin)
+%
+% EfVi = fitEfieldVi( tres , starttime , gateType , gaetLims , maxDiff , ViBzero , varargin)
+%
+% INPUT:
+%
+%   tres       time resolution in s, OR a vector of integration
+%              limits as unix times
+%   startTime  analysis start time as unix time
+%   gateType   type of gating, 'h' or 'mlat'
+%   gateLims   gate limits, km if gateType='h', degrees if gateType='mlat'
+%   maxDiff    tolerance for common volume selection. degrees in
+%              geomagnetic coordinates
+%   ViBzero    logical, 0 for normal fit, 1 to force parallel
+%              velocity to zero
+%   dpath      data path. arbitrary number of paths to GUISDAP
+%              output directories and/or individual files
+%
+%
+%
+%
+%
