@@ -30,7 +30,7 @@ E = NaN(nGate,nTime,2);
 for iG = 1:nGate
     for iT = 1:nTime
         Bsqr = sum(vel.Bned(iG,iT,:).^2)*1e-18;
-        E(iG,iT,:) = squeeze(vel.vel(iG,iT,[2 1])).*[-1 1]'*sqrt(Bsqr);
+        E(iG,iT,:) = squeeze(vel.vel(iG,iT,[2,1])).*[-1 1]'*sqrt(Bsqr);
         Ecov(iG,iT,:,:) = vel.velcov(iG,iT,[2,1],[2,1])*Bsqr;
     end
 end

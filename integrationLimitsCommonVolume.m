@@ -29,9 +29,16 @@ sites = unique(siteGT);
 % number of sites
 nsites = length(sites);
 
-% the velocity estimation does not make sense with one site...
+%% the velocity estimation does not make sense with one site...
+%% .. yes it does, we have scanning experiments!
+%if nsites < 2
+%    indCV = [];
+%    return
+%end
+
+% if there is only one site, or nothing, return the original vector
 if nsites < 2
-    indCV = [];
+    indCV = indGT;
     return
 end
 

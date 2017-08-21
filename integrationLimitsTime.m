@@ -18,6 +18,11 @@ function [ indTime , nTime ] = integrationLimitsTime( t , tres , ...
 % IV 2017
 %
 
+% start from beginning of data, if starttime is not specified
+if startTime < 0 
+    startTime = t(1);
+end
+
 % create the time-slice limits
 tlims = startTime:tres:max(t);
 

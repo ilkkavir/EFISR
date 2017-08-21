@@ -24,7 +24,13 @@ function [v,cov] = plasmaVelocityVector(vlos,vloserr,k)
 % Thus
 
 prinf = 1./(vloserr.^2);
-cov = inv(k' * ( diag(prinf) * k));
+try
+    % try to invert the posterior information matrix
+    cov = inv(k' * ( diag(prinf) * k));
+catch exception
+    % if the inversion did not work, we will just give up...
+    cov = NaN(3);
+end
 v = cov * k' * (vlos.*prinf);
 
 end

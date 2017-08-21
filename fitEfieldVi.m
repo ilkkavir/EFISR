@@ -7,7 +7,8 @@ function EfVi = fitEfieldVi( tres , startTime , gateType , gateLims ...
 %
 %   tres       time resolution in s, OR a vector of integration
 %              limits as unix times
-%   startTime  analysis start time as unix time
+%   startTime  analysis start time as unix time, use negative value
+%              to start from first data point
 %   gateType   type of gating, 'h' or 'mlat'
 %   gateLims   gate limits, km if gateType='h', degrees if gateType='mlat'
 %   maxDiff    tolerance for common volume selection. degrees in

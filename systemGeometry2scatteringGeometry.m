@@ -56,7 +56,8 @@ xyzTB0 = xyzTB./sqrt(sum(xyzTB.^2));
 xyzRB0 = xyzRB./sqrt(sum(xyzRB.^2));
 
 % the scattering wave vector direction
-k = xyzTB0 + xyzRB0;
+% minus sign because this vector must be towards the radar(s)
+k = -(xyzTB0 + xyzRB0);
 k = k./sqrt(sum(k.^2));
 
 % target location in geodetic lat, lon, h
