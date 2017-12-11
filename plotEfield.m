@@ -96,37 +96,40 @@ erreast = [ Eeast - Estdeast; Eeast + Estdeast ; Eeast*NaN];
 
 % open a figure
 fighandle = figure;
-set( fighandle , 'Position' , [10 10 690 345] , 'PaperPositionMode' ...
+set( fighandle , 'Position' , [10 10 690 520] , 'PaperPositionMode' ...
                  , 'Auto' );
 
 
 colAxes = get(gcf,'defaultAxesColorOrder');
 
 
-% upper panel for the actual fields
-h1 = subplot(2,1,1);
+% upper panels for the actual fields
 
-% north component on the left axis
-yyaxis('left')
+% East component on the first panel
+h1 = subplot(3,1,1);
+%yyaxis('left')
 plot([min(tt) max(tt)]+[-1 1]*1e4,[0 0],'-k','LineWidth',1)
 hold on
-plot(tt,Enorth,'LineWidth',1.5,'Color',colAxes(1,:));
-plot(tterr,errnorth,'-','Color',colAxes(1,:),'LineWidth',1.2);
-ylim(p.Results.nlim);
+plot(tterr,erreast,'-','Color','red','LineWidth',1.2);
+plot(tt,Eeast,'LineWidth',1.5,'Color','black');
+ylim(p.Results.elim);
 xlim([min(tt) max(tt)])
+ylabel('E_{east} [mV/m]')
+grid on
+
+% North component on the second panel
+h2 = subplot(3,1,2);
+%yyaxis('right')
+plot([min(tt) max(tt)]+[-1 1]*1e4,[0 0],'-k','LineWidth',1)
+hold on
+plot(tterr,errnorth,'-','Color','red','LineWidth',1.2);
+plot(tt,Enorth,'LineWidth',1.5,'Color','black');
+ylim(p.Results.nlim);
 ylabel('E_{north} [mV/m]')
 grid on
 
-% east component on the right axis
-yyaxis('right')
-plot(tt,Eeast,'LineWidth',1.5,'Color',colAxes(2,:));
-hold on
-plot(tterr,erreast,'-','Color',colAxes(2,:),'LineWidth',1.2);
-ylim(p.Results.elim);
-ylabel('E_{east} [mV/m]')
-
 % coordinates on the lower panel
-h2 = subplot(2,1,2);
+h3 = subplot(3,1,3);
 
 % geodetic coordinates on the left axis
 yyaxis('left');
@@ -147,7 +150,7 @@ ylabel('Degrees')
 
 legend('WGS84 lat','WGS84 lon','aacgm\_v2 lat','aacgm\_v2 lon' )
 xlabel(['UTC  ',datestr(datetime(EfVi.time(1),'convertfrom','posixtime'),'yyyy-mm-dd')])
-datetick(h2,'x',13,'keeplimits')
+datetick(h3,'x',13,'keeplimits')
 grid on
 
 % force update before manipulating the layout
@@ -155,14 +158,18 @@ drawnow
 
 
 % figure settings...
-set( h1 , 'XTickLabel' , '' ) % remove x-axis ticks from the upper panel
-pos1 = get( h1 , 'Position' ); % position of the upper panel
-pos2 = get( h2 , 'Position' ); % position of the lower panel
+set( h1 , 'XTickLabel' , '' ) % remove x-axis ticks from the upper panels
+set( h2 , 'XTickLabel' , '' ) % remove x-axis ticks from the upper panels
+pos1 = get( h1 , 'Position' ); % position of the first panel
+pos2 = get( h2 , 'Position' ); % position of the second panel
+pos3 = get( h3 , 'Position' ); % position of the third panel
 
 % remove empty space from between subplots
 set( h1 , 'Position' , [ pos1(1:2)-[0,.07] [1,1.15].*pos1(3:4)] ); 
-set( h2 , 'Position' , [ pos2(1:2) [1,1.15].*pos1(3:4)] ); 
-set( h1 , 'XTick' , get(h2,'XTick'))
+set( h2 , 'Position' , [ pos2(1:2)-[0,.07]./2 [1,1.15].*pos1(3:4)] ); 
+set( h3 , 'Position' , [ pos3(1:2) [1,1.15].*pos1(3:4)] ); 
+set( h1 , 'XTick' , get(h3,'XTick'))
+set( h2 , 'XTick' , get(h3,'XTick'))
 
 % add an axis for mlt
 hmlt = axes('Position',h1.Position,'XAxisLocation','top','Color','none','YTick',[]);
@@ -171,14 +178,15 @@ mlt = EfVi.mlt;
 inan = isnan(dnum) | isnan(mlt);
 dnum = dnum(~inan);
 mlt = mlt(~inan);
-mltticks = interp1(dnum,mlt,get(h2,'XTick'),'linear','extrap');
-set(hmlt,'xlim',get(h2,'xlim'),'XTick',get(h2,'XTick'),'XTickLabel',cellstr(num2str(mltticks','%5.2f')));
+mltticks = interp1(dnum,mlt,get(h3,'XTick'),'linear','extrap');
+set(hmlt,'xlim',get(h3,'xlim'),'XTick',get(h3,'XTick'),'XTickLabel',cellstr(num2str(mltticks','%5.2f')));
 xlabel(hmlt,'MLT');
 
 set(h1,'fontsize',12)
 set(h2,'fontsize',12)
+set(h3,'fontsize',12)
 set(hmlt,'fontsize',12)
-linkaxes([h1 h2 hmlt],'x')
+linkaxes([h1 h2 h3 hmlt],'x')
 
 % push the mlt axis to bottom
 uistack(hmlt,'bottom')

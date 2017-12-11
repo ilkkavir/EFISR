@@ -19,12 +19,12 @@ function [ indTime , nTime ] = integrationLimitsTime( t , tres , ...
 %
 
 % start from beginning of data, if starttime is not specified
-if startTime < 0 
-    startTime = t(1);
+if startTime < 0
+    startTime = round(t(1));
 end
 
 % create the time-slice limits
-tlims = startTime:tres:max(t);
+tlims = startTime:tres:(max(t)+tres);
 
 % number of slices
 nTime = length(tlims) - 1;

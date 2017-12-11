@@ -1,5 +1,7 @@
 function velocity = fitPlasmaVelocities( tres , startTime , gateType ...
-                                         , gateLims , maxDiff , ViBzero , varargin)
+                                         , gateLims , maxDiff , ...
+                                         ViBzero , ViBEzero , ViBNzero ...
+                                         , varargin)
 %
 % function velocity = fitPlasmaVelocities( tres , gateType ,
 %                     gateLims ,  maxDiff , ViPar0 , dpath [,
@@ -21,6 +23,10 @@ function velocity = fitPlasmaVelocities( tres , startTime , gateType ...
 %              geomagnetic coordinates
 %   ViBzero    logical, 0 for normal fit, 1 to force parallel
 %              velocity to zero
+%   ViBEzero   logical, 0 for normal fit, 1 to force (magnetic) east
+%              velocity to zero
+%   ViBNzero   logical, 0 for normal fit, 1 to force (magnetic) north
+%              velocity to zero
 %   dpath      data path. arbitrary number of paths to GUISDAP
 %              output directories and/or individual files
 %
@@ -31,6 +37,7 @@ function velocity = fitPlasmaVelocities( tres , startTime , gateType ...
 %   vel       nGate x nTime x 3 array of velocity vectors (m/s)
 %   velcov    nGate x nTime x 3 x 3 array of error covariance
 %             matrices (m^2/s^2)
+%   chisqr    chi-squared of the velocity fit
 %   mlat      nGate x nTime array of geomagnetic latitudes (deg)
 %   mlon      nGate x nTime array of geomagnetic longitudes (deg)
 %   glat      nGate x nTime array of geodetic (wgs84) latitudes (deg)
@@ -66,6 +73,7 @@ Bned = NaN( nGate , nTime , 3);
 height = NaN( nGate , nTime );
 time = NaN( nGate , nTime);
 mltime = NaN( nGate , nTime );
+chisqrVi = NaN( nGate , nTime );
 
 % loop over time slices
 for iT = 1:nTime
@@ -111,9 +119,36 @@ for iT = 1:nTime
             kBGT = [ kBGT ; [0 0 1] ];
         end
 
+        % if eastward velocity is forced to zero
+        if ViBEzero
+            % a zero-meeasurement
+            VGT = [ VGT ; 0 ];
+            % a small standard deviation (1 mm/s)
+            VerrGT = [ VerrGT ; 1e-3 ];
+            % magnetic field direction, we are in geomagnetic
+            % coordinates now!
+            kBGT = [ kBGT ; [0 1 0] ];
+        end
+        % if northward velocity is forced to zero
+        if ViBNzero
+            % a zero-meeasurement
+            VGT = [ VGT ; 0 ];
+            % a small standard deviation (1 mm/s)
+            VerrGT = [ VerrGT ; 1e-3 ];
+            % magnetic field direction, we are in geomagnetic
+            % coordinates now!
+            kBGT = [ kBGT ; [1 0 0] ];
+        end
+
         % velocity in magnetic coordinates
         [ vel(iG,iT,:) , velcov(iG,iT,:,:) ] = plasmaVelocityVector( ...
             VGT , VerrGT , kBGT );
+
+        % project the velocities to k-vector directions
+        velprojs = kBGT * squeeze( vel( iG , iT , : ) );
+        % chi-squared
+        chisqrVi( iG , iT ) = sum( (velprojs - VGT ).^2 ./ VerrGT.^2) ...
+            / length(velprojs);
 
         % coordinates
         mlat(iG,iT) = mean( llhmS(indCV,1) );
@@ -144,6 +179,7 @@ velocity.height = height;
 velocity.time = time;
 velocity.mlt = mltime;
 velocity.Bned = Bned;
+velocity.chisqrVi = chisqrVi;
 
 
 

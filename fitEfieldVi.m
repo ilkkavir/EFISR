@@ -1,5 +1,6 @@
 function EfVi = fitEfieldVi( tres , startTime , gateType , gateLims ...
-                             , maxDiff , ViBzero , varargin)
+                             , maxDiff , ViBzero , ViBEzero , ViBNzero ...
+                             , varargin)
 %
 % EfVi = fitEfieldVi( tres , starttime , gateType , gaetLims , maxDiff , ViBzero , varargin)
 %
@@ -14,6 +15,10 @@ function EfVi = fitEfieldVi( tres , startTime , gateType , gateLims ...
 %   maxDiff    tolerance for common volume selection. degrees in
 %              geomagnetic coordinates
 %   ViBzero    logical, 0 for normal fit, 1 to force parallel
+%              velocity to zero
+%   ViBEzero   logical, 0 for normal fit, 1 to force (magnetic) east
+%              velocity to zero
+%   ViBNzero   logical, 0 for normal fit, 1 to force (magnetic) north
 %              velocity to zero
 %   dpath      data path. arbitrary number of paths to GUISDAP
 %              output directories and/or individual files
@@ -44,7 +49,7 @@ function EfVi = fitEfieldVi( tres , startTime , gateType , gateLims ...
 
 % velocities
 vel = fitPlasmaVelocities( tres , startTime , gateType , gateLims , ...
-                           maxDiff , ViBzero , varargin{:} );
+                           maxDiff , ViBzero , ViBEzero , ViBNzero , varargin{:} );
 
 % electric field
 EfVi = plasmaVelocity2ElectricField( vel );
