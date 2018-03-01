@@ -6,8 +6,8 @@ function EfVi = fitEfieldVi( tres , startTime , gateType , gateLims ...
 %
 % INPUT:
 %
-%   tres       time resolution in s, OR a vector of integration
-%              limits as unix times
+%   tres       time resolution [s], OR a vector of unixtimes, OR
+%              number of slices to integrate as a negative integer
 %   startTime  analysis start time as unix time, use negative value
 %              to start from first data point
 %   gateType   type of gating, 'h' or 'mlat'
@@ -37,6 +37,7 @@ function EfVi = fitEfieldVi( tres , startTime , gateType , gateLims ...
 %   glon      nGate x nTime array of geodetic (wgs84) longitudes (deg)
 %   height    nGate x nTime array of heights (km)
 %   time      nGate x nTime array of times (unix time)
+%   tlims     nGate x nTime x 2 array of integration time limits (unix time)
 %   mlt       nGate x nTime array of magnetic local times (hours)
 %   Bned      nGate x nTime x 3 array of magnetic field vectors. nT
 %             in local cartesian north-east-down coordinates.

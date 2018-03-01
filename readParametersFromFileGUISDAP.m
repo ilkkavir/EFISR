@@ -118,6 +118,7 @@ param.llhmS =  zeros(nv,3);
 param.kS    =  zeros(nv,3);
 param.B     =  zeros(nv,3);
 param.mlt   =  zeros(nv,1);
+
 for hh = 1:nv
     [param.ecefS(hh,:),param.llhgS(hh,:),param.llhmS(hh,:),param.kS(hh,:)] = ...
         systemGeometry2scatteringGeometry(param.llhT(hh,:),param.llhR(hh,:), ...

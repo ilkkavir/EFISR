@@ -14,8 +14,8 @@ function velocity = fitPlasmaVelocities( tres , startTime , gateType ...
 % independent radars, or from any combination of these.
 %
 % INPUT:
-%   tres       time resolution in s, OR a vector of integration
-%              limits as unix times
+%   tres       time resolution [s], OR a vector of unixtimes, OR
+%              number of slices to integrate as a negative integer
 %   startTime  analysis start time as unix time
 %   gateType   type of gating, 'h' or 'mlat'
 %   gateLims   gate limits, km if gateType='h', degrees if gateType='mlat'
@@ -47,6 +47,7 @@ function velocity = fitPlasmaVelocities( tres , startTime , gateType ...
 %   mlt       nGate x nTime array of magnetic local times (hours)
 %   Bned      nGate x nTime x 3 array of magnetic field vectors. nT
 %             in local cartesian north-east-down coordinates.
+%   tlims     nGate x nTime x 2 array of integration time limits (unix time)
 %
 % IV 2016
 %
@@ -57,7 +58,7 @@ function velocity = fitPlasmaVelocities( tres , startTime , gateType ...
     readVelocitiesGUISDAP(varargin{:});
 
 % time-slices, indTime contains a time-slice index for each data point
-[ indTime , nTime ] = integrationLimitsTime( te , tres , startTime );
+[ indTime , nTime ] = integrationLimitsTime( ts , te , tres , startTime );
 
 % gates, indGate contains a gate index for each data point
 [ indGate , nGate ] = integrationLimitsGate( llhgS , llhmS , gateType ...
@@ -72,6 +73,7 @@ glon = NaN( nGate , nTime );
 Bned = NaN( nGate , nTime , 3);
 height = NaN( nGate , nTime );
 time = NaN( nGate , nTime);
+tlims = NaN( nGate , nTime , 2 );
 mltime = NaN( nGate , nTime );
 chisqrVi = NaN( nGate , nTime );
 
@@ -146,8 +148,9 @@ for iT = 1:nTime
 
         % project the velocities to k-vector directions
         velprojs = kBGT * squeeze( vel( iG , iT , : ) );
+
         % chi-squared
-        chisqrVi( iG , iT ) = sum( (velprojs - VGT ).^2 ./ VerrGT.^2) ...
+        chisqrVi( iG , iT ) = sum( ((velprojs - VGT ).^2) ./ VerrGT.^2) ...
             / length(velprojs);
 
         % coordinates
@@ -163,7 +166,8 @@ for iT = 1:nTime
         % times
         time(iG,iT) = (mean(te(indCV)) + mean(ts(indCV)))/2;
         mltime(iG,iT) =  mean(mlt(indCV));
-
+        tlims(iG,iT,1) = min(ts(indCV));
+        tlims(iG,iT,2) = min(te(indCV));
     end
 
 end
@@ -180,6 +184,7 @@ velocity.time = time;
 velocity.mlt = mltime;
 velocity.Bned = Bned;
 velocity.chisqrVi = chisqrVi;
+velocity.tlims = tlims;
 
 
 

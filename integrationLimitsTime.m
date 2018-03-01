@@ -1,4 +1,4 @@
-function [ indTime , nTime ] = integrationLimitsTime( t , tres , ...
+function [ indTime , nTime ] = integrationLimitsTime( ts, te , tres , ...
                                                   startTime)
 %
 %
@@ -7,8 +7,10 @@ function [ indTime , nTime ] = integrationLimitsTime( t , tres , ...
 %
 %
 % INPUT:
-%  t          time points
-%  tres       time resolution
+%  ts         integration start times
+%  te         integration end times
+%  tres       time resolution [s], OR a vector of unixtimes, OR
+%             number of slices to integrate as a negative integer
 %  startTime  beginning  of first time slice
 %
 % OUTPUT:
@@ -20,25 +22,67 @@ function [ indTime , nTime ] = integrationLimitsTime( t , tres , ...
 
 % start from beginning of data, if starttime is not specified
 if startTime < 0
-    startTime = round(t(1));
+    startTime = round(te(1));
 end
 
-% create the time-slice limits
-tlims = startTime:tres:(max(t)+tres);
+if tres(1)>0
+    
+    % create the time-slice limits
+    if length(tres==1)
+        tlims = startTime:tres:(max(te)+tres);
+    else
+        tlims = tres;
+    end
+    
+    % number of slices
+    nTime = length(tlims) - 1;
+    
+    % number of data points
+    nd = length(te);
+    
+    % allocate the index vector, use -1 for points outside the
+    % integration limits
+    indTime = -ones(nd,1);
+    
+    % the indices
+    for iT=1:nTime
+        indTime( t >= tlims(iT) & t < tlims(iT+1) ) = iT;
+    end
+    
+elseif tres(1)<0
 
-% number of slices
-nTime = length(tlims) - 1;
+    % arrange the integration periods with start time
+    tse  = [ts(:)';te(:)']';
+    [~,its] = sort(tse(:,1));
+    tse = tse(its,:);
 
-% number of data points
-nd = length(t);
+    % number of data points
+    nd = length(te);
 
-% allocate the index vector, use -1 for points outside the
-% integration limits
-indTime = -ones(nd,1);
+    % initialize the index vector
+    indTime = -ones(nd,1);
 
-% the indices
-for iT=1:nTime
-    indTime( t >= tlims(iT) & t < tlims(iT+1) ) = iT;
+    % find the period indices for the sorted data
+    iT = 1;
+    ii = 1;
+    while iT <= nd
+        iMask = tse(:,1) >= tse(iT,1) & tse(:,1) < tse(iT,2);
+        indTime(iMask) = ii;
+        ii = ii+1;
+        iT = iT + sum(iMask);
+    end
+
+    % put the indices in the correct order
+    indTime(its) = indTime;
+
+    % the indices are ordered with increasing time, the time
+    % integration reduces to rounding
+    indTime = ceil(indTime/abs(tres(1)));
+
+    % number of time slices
+    nTime = length(unique(indTime));
+
+else
+    error(['Invalide tres ',num2str(tres)])
 end
-
 end
