@@ -20,6 +20,8 @@ function fighandle = plotEfield( EfVi , varargin )
 %              than stdlim are not plotted. Default 200
 %    chisqrlim chi-square limit, points with chi-square larger than
 %              chisqrlim are not plotted, default 10
+%    starttime     x-axis start time as a matlab datetime
+%    endtime     x-axis end tiem as a matlab datetime
 %
 % OUTPUT:
 %  fighandle matlab figure handles to the figures
@@ -51,6 +53,13 @@ checkStdlim = @(x) (isnumeric(x) & length(x)==1);
 defaultChisqrlim = 10;
 checkChisqrlim = @(x) (isnumeric(x) & length(x)==1);
 
+defaultstarttime = NaN;
+checkStarttime = @(x) (isdatetime(x));
+
+defaultendtime = NaN;
+checkEndtime = @(x) (isdatetime(x));
+
+
 addRequired( p , 'EfVi' , @isstruct ); % data is always required
 addParameter( p , 'gates' , defaultGates , checkGates );
 addParameter( p , 'nlim' , defaultNlim , checkNlim );
@@ -59,23 +68,32 @@ addParameter( p , 'glim' , defaultGlim , checkGlim );
 addParameter( p , 'mlim' , defaultMlim , checkMlim );
 addParameter( p , 'stdlim' , defaultStdlim , checkStdlim);
 addParameter( p , 'chisqrlim' , defaultChisqrlim , checkChisqrlim);
+addParameter( p , 'starttime' , defaultstarttime , checkStarttime );
+addParameter( p , 'endtime' , defaultendtime , checkEndtime );
 
 parse(p,EfVi,varargin{:});
 
 
 % use this function recursively to plot all the gates
+gatenumfound = 0;
 if length(p.Results.gates) > 1
+    fighandle = [];
     for gatenum = p.Results.gates
         varlist = varargin;
         for iarg = 1:nargin-1
             if all(isstr(varlist{iarg}))
                 if strcmp(varlist{iarg},'gates')
                     varlist{iarg+1} = gatenum;
+                    gatenumfound = 1;
                     break;
                 end
             end
         end
-        fighandle = [ fighandle ; plotEfield(EfVi,varlist) ];
+        if ~gatenumfound
+            varlist{nargin} = 'gates';
+            varlist{nargin+1} = gatenum;
+        end
+        fighandle = [ fighandle ; plotEfield(EfVi,varlist{:}) ];
     end
     return;
 end
@@ -108,7 +126,26 @@ Estdeast(irem)  = NaN;
 
 % time as datenum
 %tt = datenum(datetime(EfVi.time,'convertfrom','posixtime'));
-tt = datetime(EfVi.time,'convertfrom','posixtime');
+tt = datetime(EfVi.time(gnum,:),'convertfrom','posixtime');
+
+% x axis limits
+starttime = p.Results.starttime;
+endtime = p.Results.endtime;
+if ~isdatetime(starttime)
+    starttime = min(tt);
+end
+if ~isdatetime(endtime)
+    endtime = max(tt);
+end
+if isnat(starttime)|isnat(endtime)
+    fighandle = [];
+    return
+end
+if starttime == endtime
+    disp('aefewqf')
+    fighandle = [];
+    return
+end
 
 % for error bars (matlab errorbar-function did not produce
 % satisfactory results...)
@@ -136,7 +173,7 @@ hold on
 plot(tterr,erreast,'-','Color','red','LineWidth',1.2);
 plot(tt,Eeast,'LineWidth',1.5,'Color','black');
 ylim(p.Results.elim);
-xlim([min(tt) max(tt)])
+xlim([starttime endtime])
 ylabel('E_{east} [mV/m]')
 grid on
 
@@ -148,7 +185,7 @@ hold on
 plot(tterr,errnorth,'-','Color','red','LineWidth',1.2);
 plot(tt,Enorth,'LineWidth',1.5,'Color','black');
 ylim(p.Results.nlim);
-xlim([min(tt) max(tt)])
+xlim([starttime endtime])
 ylabel('E_{north} [mV/m]')
 grid on
 
@@ -157,25 +194,25 @@ h3 = subplot(3,1,3);
 
 % geodetic coordinates on the left axis
 yyaxis('left');
-plot(tt,EfVi.glat,'LineWidth',1.5);
+plot(tt,EfVi.glat(gnum,:),'LineWidth',1.5);
 hold on
-plot(tt,EfVi.glon,'LineWidth',1.5);
+plot(tt,EfVi.glon(gnum,:),'LineWidth',1.5);
 ylim( p.Results.glim )
-xlim([min(tt) max(tt)])
+xlim([starttime endtime])
 ylabel('Degrees')
 
 % aacgm_v2 coordinates on the right axis
 yyaxis('right')
-plot(tt,EfVi.mlat,'LineWidth',1.5);
+plot(tt,EfVi.mlat(gnum,:),'LineWidth',1.5);
 hold on
-plot(tt,EfVi.mlon,'LineWidth',1.5);
+plot(tt,EfVi.mlon(gnum,:),'LineWidth',1.5);
 ylim( p.Results.mlim )
-xlim([min(tt) max(tt)])
+xlim([starttime endtime])
 ylabel('Degrees')
 
 
 legend('WGS84 lat','WGS84 lon','aacgm\_v2 lat','aacgm\_v2 lon' )
-xlabel(['UTC  ',datestr(datetime(EfVi.time(1),'convertfrom','posixtime'),'yyyy-mm-dd')])
+xlabel(['UTC  ',datestr(datetime(starttime,'convertfrom','posixtime'),'yyyy-mm-dd')])
 datetick(h3,'x',13,'keeplimits')
 grid on
 
@@ -198,13 +235,26 @@ set( h1 , 'XTick' , get(h3,'XTick'))
 set( h2 , 'XTick' , get(h3,'XTick'))
 
 % MLT ticks on the top panel
-dnum = datetime(EfVi.time,'convertfrom','posixtime');
-mlt = EfVi.mlt;
-inan =  isnan(mlt);
-dnum = dnum(~inan);
-mlt = mlt(~inan);
-mltticks = interp1(dnum,mlt,get(h3,'XTick'),'linear','extrap');
-set(h1,'XAxisLocation','top','XTickLabel', cellstr(num2str(mltticks','%5.2f')))
+% the interpolation fails when the x axis is longer than the data vector
+%dnum = datetime(EfVi.time,'convertfrom','posixtime');
+%mlt = EfVi.mlt;
+%inan =  isnan(mlt);
+%dnum = dnum(~inan);
+%mlt = mlt(~inan);
+%for kk=2:length(mlt)
+%    while (mlt(kk)<mlt(kk-1))
+%        mlt(kk)=mlt(kk)+24;
+%    end
+%end
+%mltticks = interp1(dnum,mlt,get(h3,'XTick'),'linear','extrap');
+%mltticks = mod(mltticks,24);
+utticks = get(h3,'XTick');
+mltticks = NaN(length(utticks),1);
+for kk=1:length(utticks)
+    [mlat,mlon,mh] = geodetic2aacgm(EfVi.glat(gnum,kk),EfVi.glon(gnum,kk),EfVi.height(gnum,kk),utticks(kk));
+    mltticks(kk) = magneticLocalTime(utticks(kk),mlon);
+end
+set(h1,'XAxisLocation','top','XTickLabel', cellstr(num2str(mltticks,'%5.2f')))
 xlabel(h1,'MLT (aacgm\_v2)')
 
 set(h1,'fontsize',12)

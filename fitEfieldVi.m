@@ -2,8 +2,8 @@ function EfVi = fitEfieldVi( tres , startTime , gateType , gateLims ...
                              , maxDiff , ViBzero , ViBEzero , ViBNzero ...
                              , varargin)
 %
-% EfVi = fitEfieldVi( tres , starttime , gateType , gaetLims ,
-% maxDiff , ViBzero, ViBEzero , ViBNzero  , dpath )
+% EfVi = fitEfieldVi( tres , starttime , gateType , gateLims ,
+% maxDiff , ViBzero , ViBEzero , ViBNzero , dpath [, dpath2 , ...] )
 %
 % INPUT:
 %
