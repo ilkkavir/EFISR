@@ -46,7 +46,7 @@ if tres(1)>0
     
     % the indices
     for iT=1:nTime
-        indTime( t >= tlims(iT) & t < tlims(iT+1) ) = iT;
+        indTime( te >= tlims(iT) & te < tlims(iT+1) ) = iT;
     end
     
 elseif tres(1)<0

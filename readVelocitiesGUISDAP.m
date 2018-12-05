@@ -94,8 +94,10 @@ if isstruct(fpath)
         if readThisFile
             %Ne,NeStd,Ti,TiStd,Tr,TrStd,Coll,CollStd,Vi,Vistd,Comp,CompStd,status,chisqr,ts,te,mlt,llhT,llhR,azelR,r,h,phi,site,ecefS,llhgS,llhmS,kS,B
             disp(fpath(ff).name)
+            %fprintf('.')
             paramlist = readParametersFromFileGUISDAP(fpath(ff).name);
-            % should pre-allocate!!! the re-allocation takes forever...
+            % could pre-allocate, but this is fast compared to the
+            % function call above
             v = [ v ; paramlist.Vi ];
             verr = [ verr ; paramlist.ViStd ];
             status = [ status ; paramlist.status ];
@@ -118,7 +120,7 @@ if isstruct(fpath)
         end
     end
 end
-
+fprintf('\n')
 end
 
 
