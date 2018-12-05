@@ -1,0 +1,39 @@
+function saveEfield( ef , varargin )
+%
+% saveEfield( ef , ...)
+% 
+% Save the electric field and ion velocity data to file with an
+% automatically generated file name. Also a plot of the electric
+% field is created.
+%
+% INPUT:
+%  ef   an output list from fitEfVi
+%  ...  other parameters as name-value pairs + other parameters
+%       passed to plotEfield 
+%       the only parameter effective in plotEfield is 'path', it
+%       must be a path to an existing directory, where the results
+%       are saved. default '.'
+%
+% OUTPUT:
+%   none
+%
+% IV 2018
+%
+
+% parse the inputs
+p = inputParser;
+p.KeepUnmatched=true;
+defaultSavepath = '.';
+checkSavepath = @(x) exist(x,'dir');
+addRequired(p,'ef',@isstruct);
+addParameter(p,'path',defaultSavepath,checkSavepath);
+parse(p,ef,varargin{:})
+
+% the file name
+fname = fullfile(p.Results.path,[datestr(datetime(round(ef.time(1)),'ConvertFrom','posixtime'),'yyyymmddTHHMMss'),'-',datestr(datetime(round(ef.time(end)),'ConvertFrom','posixtime'),'yyyymmddTHHMMss'),'_Efield']);
+
+save([fname,'_Vi.mat']);
+
+% plot
+plotEfield( ef , varargin{:} );
+print([fname,'.png'],'-dpng');

@@ -33,4 +33,11 @@ catch exception
 end
 v = cov * k' * (vlos.*prinf);
 
+% something must be wrong if a variance is negative or if there are
+% complex values in cov
+if any(diag(cov)<=0) | any(any(imag(cov)~=0))
+    cov = NaN(3);
+    v = v.*NaN;
+end
+
 end
