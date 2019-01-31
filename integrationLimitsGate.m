@@ -32,15 +32,22 @@ indGate = -ones(nd,1);
 % pick the correct data vector
 if type=='h'
     dGate = llhg(:,3)./1000; % the limits are given in km
+    hlims = [-Inf Inf];
 elseif type=='mlat'
     dGate = llhm(:,1);
+    nGate = nGate - 2; % the first two elements are the altitude
+                       % limits
+    hlims = limits(1:2);
+    limits = limits(2:end);
 else
     error(['Unknown gate type ' type ]);
 end
+hGate = llhg(:,3)./1000; % heights 
 
 % the indices
 for iG=1:nGate
-    indGate( (dGate >= limits(iG) ) & (dGate < limits(iG+1)) ) = iG;
+    indGate( (dGate >= limits(iG) ) & (dGate < limits(iG+1)) & hGate ...
+             > hlims(1) & hGate < hlims(2) ) = iG;
 end
 
 end

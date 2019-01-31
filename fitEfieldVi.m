@@ -12,7 +12,10 @@ function EfVi = fitEfieldVi( tres , startTime , gateType , gateLims ...
 %   startTime  analysis start time as unix time, use negative value
 %              to start from first data point
 %   gateType   type of gating, 'h' or 'mlat'
-%   gateLims   gate limits, km if gateType='h', degrees if gateType='mlat'
+%   gateLims   gate limits, km if gateType='h', degrees if
+%              gateType='mlat'. If gateType is 'mlat', the first
+%              two elements of gateLims are the lowest and heighest
+%              altitude to be used, in km.
 %   maxDiff    tolerance for common volume selection. degrees in
 %              geomagnetic coordinates
 %   ViBzero    logical, 0 for normal fit, 1 to force parallel

@@ -108,7 +108,7 @@ Enorth = EfVi.E( gnum , : , 1 ) * 1000;
 Eeast =  EfVi.E( gnum , : , 2 ) * 1000;
 
 % remote points with large chi-squared
-chisqrMask = EfVi.chisqrVi > p.Results.chisqrlim;
+chisqrMask = EfVi.chisqrVi(gnum,:) > p.Results.chisqrlim;
 Enorth(chisqrMask) = NaN;
 Eeast(chisqrMask) = NaN;
 
