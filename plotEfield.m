@@ -142,12 +142,11 @@ if isnat(starttime)|isnat(endtime)
     return
 end
 if starttime == endtime
-    disp('aefewqf')
     fighandle = [];
     return
 end
 
-% for error bars (matlab errorbar-function did not produce
+% for error bars (matlab errorbar-function did not prduce
 % satisfactory results...)
 tterr = [tt;tt;[tt(2:end) tt(end)]];
 errnorth = [ Enorth - Estdnorth; Enorth + Estdnorth ; Enorth*NaN];
