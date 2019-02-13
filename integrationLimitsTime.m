@@ -22,7 +22,8 @@ function [ indTime , nTime ] = integrationLimitsTime( ts, te , tres , ...
 
 % start from beginning of data, if starttime is not specified
 if startTime < 0
-    startTime = round(te(1));
+    %    startTime = round(te(1));
+    startTime = round(min(te));
 end
 
 if tres(1)>0

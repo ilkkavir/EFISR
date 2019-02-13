@@ -1,0 +1,12 @@
+function EfViClean = cleanEfield( EfVi , varargin )
+%
+% Clean failed fits from electric field data based on chi-square,
+% E-N component correlation, and standard deviation.
+%
+% INPUT:
+% 
+%
+%
+%
+%
+%

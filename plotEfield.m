@@ -20,6 +20,8 @@ function fighandle = plotEfield( EfVi , varargin )
 %              than stdlim are not plotted. Default 200
 %    chisqrlim chi-square limit, points with chi-square larger than
 %              chisqrlim are not plotted, default 10
+%    corrlim   upper limit for E-field east and north component
+%              correlation, default 0..95
 %    starttime     x-axis start time as a matlab datetime
 %    endtime     x-axis end tiem as a matlab datetime
 %
@@ -53,6 +55,9 @@ checkStdlim = @(x) (isnumeric(x) & length(x)==1);
 defaultChisqrlim = 10;
 checkChisqrlim = @(x) (isnumeric(x) & length(x)==1);
 
+defaultCorrlim = 0.95;
+checkCorrlim = @(x) (isnumeric(x) & length(x)==1);
+
 defaultstarttime = NaN;
 checkStarttime = @(x) (isdatetime(x));
 
@@ -68,6 +73,7 @@ addParameter( p , 'glim' , defaultGlim , checkGlim );
 addParameter( p , 'mlim' , defaultMlim , checkMlim );
 addParameter( p , 'stdlim' , defaultStdlim , checkStdlim);
 addParameter( p , 'chisqrlim' , defaultChisqrlim , checkChisqrlim);
+addParameter( p , 'corrlim' , defaultCorrlim , checkCorrlim);
 addParameter( p , 'starttime' , defaultstarttime , checkStarttime );
 addParameter( p , 'endtime' , defaultendtime , checkEndtime );
 
@@ -101,42 +107,17 @@ end
 % plot one gate, we have a unique p.results.gates at this point
 gnum = p.Results.gates;
 
-% extract the data from the input struct, we will manipulate it a bit
 
-% the electric field components (mV/m)
-Enorth = EfVi.E( gnum , : , 1 ) * 1000;
-Eeast =  EfVi.E( gnum , : , 2 ) * 1000;
+EfViClean = cleanEfield( EfVi , 'stdlim' , p.Results.stdlim , ...
+                         'chisqrlim' , p.Results.chisqrlim , 'corrlim' ...
+                         , p.Results.corrlim );
+Enorth = EfViClean.E( gnum , : , 1 ) * 1000;
+Eeast =  EfViClean.E( gnum , : , 2 ) * 1000;
+Estdnorth = sqrt( EfViClean.Ecov( gnum , : , 1 , 1 ) ) * 1000;
+Estdeast  = sqrt( EfViClean.Ecov( gnum , : , 2 , 2 ) ) * 1000;
 
-% remote points with large chi-squared
-chisqrMask = EfVi.chisqrVi(gnum,:) > p.Results.chisqrlim;
-Enorth(chisqrMask) = NaN;
-Eeast(chisqrMask) = NaN;
-
-% standard deviations from the covariance matrices
-Estdnorth = sqrt( EfVi.Ecov( gnum , : , 1 , 1 ) ) * 1000;
-Estdeast  = sqrt( EfVi.Ecov( gnum , : , 2 , 2 ) ) * 1000;
-
-% remove points with large std in either component
-irem = Estdnorth > p.Results.stdlim | Estdeast > p.Results.stdlim | ...
-       chisqrMask;
-
-iirem = irem(3:end) & irem(1:end-2);
-irem(find(iirem)+1) = true;
-if (irem(2))
-    irem(1) = true;
-end
-if (irem(end-1))
-    irem(end)=true;
-end
-
-Enorth(irem) = NaN;
-Eeast(irem)  = NaN;
-Estdnorth(irem) = NaN;
-Estdeast(irem)  = NaN;
-
-% time as datenum
-%tt = datenum(datetime(EfVi.time,'convertfrom','posixtime'));
-tt = datetime(EfVi.time(gnum,:),'convertfrom','posixtime');
+% time as datetime
+tt = datetime(EfViClean.time(gnum,:),'convertfrom','posixtime');
 
 % x axis limits
 starttime = p.Results.starttime;
@@ -202,18 +183,18 @@ h3 = subplot(3,1,3);
 
 % geodetic coordinates on the left axis
 yyaxis('left');
-plot(tt,EfVi.glat(gnum,:),'LineWidth',1.5);
+plot(tt,EfViClean.glat(gnum,:),'LineWidth',1.5);
 hold on
-plot(tt,EfVi.glon(gnum,:),'LineWidth',1.5);
+plot(tt,EfViClean.glon(gnum,:),'LineWidth',1.5);
 ylim( p.Results.glim )
 xlim([starttime endtime])
 ylabel('Degrees')
 
 % aacgm_v2 coordinates on the right axis
 yyaxis('right')
-plot(tt,EfVi.mlat(gnum,:),'LineWidth',1.5);
+plot(tt,EfViClean.mlat(gnum,:),'LineWidth',1.5);
 hold on
-plot(tt,EfVi.mlon(gnum,:),'LineWidth',1.5);
+plot(tt,EfViClean.mlon(gnum,:),'LineWidth',1.5);
 ylim( p.Results.mlim )
 xlim([starttime endtime])
 ylabel('Degrees')
@@ -244,8 +225,8 @@ set( h2 , 'XTick' , get(h3,'XTick'))
 
 % MLT ticks on the top panel
 % the interpolation fails when the x axis is longer than the data vector
-%dnum = datetime(EfVi.time,'convertfrom','posixtime');
-%mlt = EfVi.mlt;
+%dnum = datetime(EfViClean.time,'convertfrom','posixtime');
+%mlt = EfViClean.mlt;
 %inan =  isnan(mlt);
 %dnum = dnum(~inan);
 %mlt = mlt(~inan);
@@ -259,7 +240,7 @@ set( h2 , 'XTick' , get(h3,'XTick'))
 utticks = get(h3,'XTick');
 mltticks = NaN(length(utticks),1);
 for kk=1:length(utticks)
-    [mlat,mlon,mh] = geodetic2aacgm(EfVi.glat(gnum,kk),EfVi.glon(gnum,kk),EfVi.height(gnum,kk),utticks(kk));
+    [mlat,mlon,mh] = geodetic2aacgm(EfViClean.glat(gnum,kk),EfViClean.glon(gnum,kk),EfViClean.height(gnum,kk),utticks(kk));
     mltticks(kk) = magneticLocalTime(utticks(kk),mlon);
 end
 set(h1,'XAxisLocation','top','XTickLabel', cellstr(num2str(mltticks,'%5.2f')))

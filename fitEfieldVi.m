@@ -30,7 +30,7 @@ function EfVi = fitEfieldVi( tres , startTime , gateType , gateLims ...
 %
 % OUTPUT:
 %
-%  velocity  a struct with fields
+%  EfVi  a struct with fields
 %
 %   vel       nGate x nTime x 3 array of velocity vectors (m/s)
 %   velcov    nGate x nTime x 3 x 3 array of error covariance
@@ -45,9 +45,19 @@ function EfVi = fitEfieldVi( tres , startTime , gateType , gateLims ...
 %   mlt       nGate x nTime array of magnetic local times (hours)
 %   Bned      nGate x nTime x 3 array of magnetic field vectors. nT
 %             in local cartesian north-east-down coordinates.
-%   E      nGate x nTime x 2 array of  electric field estimates
-%   Ecov   nGate x nTime x 2 x 2 error covariance matrix of the
-%          electric field estimates
+%   E         nGate x nTime x 2 array of  electric field estimates.
+%   Ecov      nGate x nTime x 2 x 2 error covariance matrix of the
+%             electric field estimates
+%
+% Details:
+%
+% The output is in the local geomagnetic north-east-down
+% coordinates: EfVi.vel(:,:,1) are positive toward geomagnetic
+% north, EfVi.vel(:,:,2) are positive toward geomagnetic east, and
+% EfVi.vel(:,:,3) are positive downwards along the field-line. 
+% Similarly, EfVi.E(:,:,1) are positive toward geomagnetic north,
+% and EfVi.E(:,:,2) are positive toward geomagnetic east.
+%
 %
 % IV 2017
 %
