@@ -168,7 +168,7 @@ for iT = 1:nTime
         time(iG,iT) = (mean(te(indCV)) + mean(ts(indCV)))/2;
         mltime(iG,iT) =  mean(mlt(indCV));
         tlims(iG,iT,1) = min(ts(indCV));
-        tlims(iG,iT,2) = min(te(indCV));
+        tlims(iG,iT,2) = max(te(indCV));
     end
 
 end
