@@ -14,7 +14,6 @@ function [flist] = listmatfiles( varargin )
 % IV 2016
 %
 
-
 nd  = length(varargin);
 
 flist = [];
@@ -44,7 +43,7 @@ if nd > 0
                 tmplist.name = ddpath;
             end
         end
-        % concatenate all directory listings. 
+        % concatenate all directory listings.
         flist = [flist;tmplist];
     end
 end

@@ -1,4 +1,4 @@
-function saveEfield( ef , varargin )
+function fname = saveEfield( ef , varargin )
 %
 % saveEfield( ef , ...)
 % 

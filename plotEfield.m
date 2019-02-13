@@ -117,7 +117,17 @@ Estdnorth = sqrt( EfVi.Ecov( gnum , : , 1 , 1 ) ) * 1000;
 Estdeast  = sqrt( EfVi.Ecov( gnum , : , 2 , 2 ) ) * 1000;
 
 % remove points with large std in either component
-irem = Estdnorth > p.Results.stdlim | Estdeast > p.Results.stdlim;
+irem = Estdnorth > p.Results.stdlim | Estdeast > p.Results.stdlim | ...
+       chisqrMask;
+
+iirem = irem(3:end) & irem(1:end-2);
+irem(find(iirem)+1) = true;
+if (irem(2))
+    irem(1) = true;
+end
+if (irem(end-1))
+    irem(end)=true;
+end
 
 Enorth(irem) = NaN;
 Eeast(irem)  = NaN;
@@ -151,7 +161,6 @@ end
 tterr = [tt;tt;[tt(2:end) tt(end)]];
 errnorth = [ Enorth - Estdnorth; Enorth + Estdnorth ; Enorth*NaN];
 erreast = [ Eeast - Estdeast; Eeast + Estdeast ; Eeast*NaN];
-
 
 % open a figure
 fighandle = figure;
