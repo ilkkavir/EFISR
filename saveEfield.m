@@ -30,7 +30,7 @@ addParameter(p,'path',defaultSavepath,checkSavepath);
 parse(p,ef,varargin{:})
 
 % the file name
-fname = fullfile(p.Results.path,[datestr(datetime(round(ef.time(1)),'ConvertFrom','posixtime'),'yyyymmddTHHMMss'),'-',datestr(datetime(round(ef.time(end)),'ConvertFrom','posixtime'),'yyyymmddTHHMMss'),'_Efield']);
+fname = fullfile(p.Results.path,[datestr(datetime(round(min(ef.time)),'ConvertFrom','posixtime'),'yyyymmddTHHMMss'),'-',datestr(datetime(round(max(ef.time)),'ConvertFrom','posixtime'),'yyyymmddTHHMMss'),'_Efield']);
 
 save([fname,'_Vi.mat'],'ef');
 
