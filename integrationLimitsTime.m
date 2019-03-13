@@ -67,7 +67,9 @@ elseif tres(1)<0
     iT = 1;
     ii = 1;
     while iT <= nd
-        iMask = tse(:,1) >= tse(iT,1) & tse(:,1) < tse(iT,2);
+        % a 1 ms tolerance because the EISCAT timestamps are
+        % slightly inaccurate
+        iMask = tse(:,1) >= tse(iT,1) & tse(:,1) < (tse(iT,2)-1e-3)%& tse(:,1) < tse(iT,2);
         indTime(iMask) = ii;
         ii = ii+1;
         iT = iT + sum(iMask);
