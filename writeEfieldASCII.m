@@ -26,7 +26,7 @@ addParameter(p,'path',defaultSavepath,checkSavepath);
 parse(p,ef,varargin{:})
 
 % the file name
-fname = fullfile(p.Results.path,[datestr(datetime(round(min(ef.time)),'ConvertFrom','posixtime'),'yyyymmddTHHMMss'),'-',datestr(datetime(round(max(ef.time)),'ConvertFrom','posixtime'),'yyyymmddTHHMMss'),'_Efield_Vi.dat']);
+fname = fullfile(p.Results.path,[datestr(datetime(round(min(ef.time(:))),'ConvertFrom','posixtime'),'yyyymmddTHHMMss'),'-',datestr(datetime(round(max(ef.time(:))),'ConvertFrom','posixtime'),'yyyymmddTHHMMss'),'_Efield_Vi.dat']);
 
 % header
 headstr1 = '      Integration period            Location              Ion velocity     Electric field';
@@ -37,7 +37,7 @@ nd = prod(size(ef.time));
 dmat = NaN(nd*2,20);
 dline = 1;
 for tt=1:size(ef.time,2)
-    for gg=1:size(ef.time(1))
+    for gg=1:size(ef.time,1)
         tts = datetime(ef.tlims(gg,tt,1),'convertfrom','posixtime');
         tte = datetime(ef.tlims(gg,tt,2),'convertfrom','posixtime');
         dmat(dline,1) = mod(tts.Year,100);
@@ -81,10 +81,14 @@ fprintf(fid,'%s\n',headstr1);
 fprintf(fid,'%s\n',headstr2);
 % loop to allow printing the blank space on every second line
 for dline=1:2:size(dmat,1)
-    fprintf(fid,[' %2u%2u %2u%2u %2u%2u %2u%2u %2u%2u %2u%2u%7.2f' ...
-    '%6.2f%6.1f%8.1f%8.1f%8.1f%8.1f%8.1f\n'],dmat(dline,1:20));
-    fprintf(fid,['                                                 ' ...
-    '%8.1f%8.1f%8.1f%8.1f%8.1f\n'],dmat(dline+1,16:20));
+    % do not write lines with missing timestamps (completely
+    % missing data)
+    if dmat(dline,1) > -9999
+        fprintf(fid,[' %2u%2u %2u%2u %2u%2u %2u%2u %2u%2u %2u%2u%7.2f' ...
+                     '%6.2f%6.1f%8.1f%8.1f%8.1f%8.1f%8.1f\n'],dmat(dline,1:20));
+        fprintf(fid,['                                                 ' ...
+                     '%8.1f%8.1f%8.1f%8.1f%8.1f\n'],dmat(dline+1,16:20));
+    end
 end
 
 fclose(fid);
