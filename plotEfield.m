@@ -201,7 +201,8 @@ ylabel('Degrees')
 
 
 legend('WGS84 lat','WGS84 lon','aacgm\_v2 lat','aacgm\_v2 lon' )
-xlabel(['UTC  ',datestr(datetime(starttime,'convertfrom','posixtime'),'yyyy-mm-dd')])
+%xlabel(['UTC  ',datestr(datetime(starttime,'convertfrom','posixtime'),'yyyy-mm-dd')])
+xlabel(['UTC  ',datestr(starttime,'yyyy-mm-dd')])
 datetick(h3,'x',13,'keeplimits')
 grid on
 
