@@ -119,6 +119,7 @@ param.kS    =  zeros(nv,3);
 param.B     =  zeros(nv,3);
 param.mlt   =  zeros(nv,1);
 
+% should calculate only unique values like in Daedalus/calculateCoordinatesMadrigal.m!
 for hh = 1:nv
 
     [param.ecefS(hh,:),param.llhgS(hh,:),param.llhmS(hh,:),param.kS(hh,:)] = ...
@@ -130,8 +131,12 @@ for hh = 1:nv
     % magnetic field direction from igrf
     % maximum altitude of igrf is 600 km...
     if param.llhgS(hh,3) <= 600000
-        param.B(hh,:) = igrfmagm( param.llhgS(hh,3) , param.llhgS(hh,1) , param.llhgS(hh,2), ...
-                            decyear(r_time(2,:)));
+        try
+            param.B(hh,:) = igrfmagm( param.llhgS(hh,3) , param.llhgS(hh,1) , param.llhgS(hh,2), ...
+                                      decyear(r_time(2,:)));
+        catch
+            param.B(hh,:) = igrfmagm( param.llhgS(hh,3) , param.llhgS(hh,1) , param.llhgS(hh,2), ...
+                                      2020);
     end
 
 

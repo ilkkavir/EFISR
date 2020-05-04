@@ -162,7 +162,9 @@ for iT = 1:nTime
         height(iG,iT) = mean( llhgS(indCV,3) )/1000;
 
         % magnetic field
-        Bned(iG,iT,:) = mean(B(indCV,:));
+        Bned(iG,iT,1) = mean(B(indCV,1));
+        Bned(iG,iT,2) = mean(B(indCV,2));
+        Bned(iG,iT,3) = mean(B(indCV,3));
 
         % times
         time(iG,iT) = (mean(te(indCV)) + mean(ts(indCV)))/2;
