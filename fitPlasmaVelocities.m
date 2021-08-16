@@ -168,9 +168,17 @@ for iT = 1:nTime
 
         % times
         time(iG,iT) = (mean(te(indCV)) + mean(ts(indCV)))/2;
-        mltime(iG,iT) =  mean(mlt(indCV));
         tlims(iG,iT,1) = min(ts(indCV));
         tlims(iG,iT,2) = max(te(indCV));
+        
+        % be careful with mlt around the mlt midnight
+        mlttmp = mlt(indCV);
+        maxmlt = max(mlttmp);
+        minmlt = min(mlttmp);
+        if maxmlt - minmlt > 20
+            mlttmp(mlttmp<12) = mlttmp(mlttmp<12) + 24;
+        end
+        mltime(iG,iT) =  mod(mean(mlttmp),24);
     end
 
 end

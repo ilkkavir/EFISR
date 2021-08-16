@@ -14,7 +14,7 @@ function EfVi = fitEfieldVi( tres , startTime , gateType , gateLims ...
 %   gateType   type of gating, 'h' or 'mlat'
 %   gateLims   gate limits, km if gateType='h', degrees if
 %              gateType='mlat'. If gateType is 'mlat', the first
-%              two elements of gateLims are the lowest and heighest
+%              two elements of gateLims are the smallest and largest
 %              altitude to be used, in km.
 %   maxDiff    tolerance for common volume selection. degrees in
 %              geomagnetic coordinates
@@ -68,5 +68,16 @@ vel = fitPlasmaVelocities( tres , startTime , gateType , gateLims , ...
 
 % electric field
 EfVi = plasmaVelocity2ElectricField( vel );
+
+
+% copy the input arguments to the output array
+EfVi.tres = tres;
+EfVi.startTime = startTime;
+EfVi.gateType = gateType;
+EfVi.gateLims = gateLims;
+EfVi.maxDiff = maxDiff;
+EfVi.ViBzero = ViBzero;
+EfVi.ViBEzero = ViBEzero;
+EfVi.ViBNzero = ViBNzero;
 
 end
