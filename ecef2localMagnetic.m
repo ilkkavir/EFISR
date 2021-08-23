@@ -18,6 +18,10 @@ function [kBned] = ecef2localMagnetic( k , ecefS , llhgS , Bned )
 % IV 2017
 %
 
+    if nargin < 5
+        show = false;
+    end
+
 % allocate variables...
 kned = zeros(size(k));
 kBned = zeros(size(k));
@@ -30,12 +34,15 @@ wgs84 = wgs84Ellipsoid('meters');
 
 % geodetic ned coordinates
 for ik = 1:nk
-    X = ecefS(ik,1) + k(ik,1);
-    Y = ecefS(ik,2) + k(ik,2);
-    Z = ecefS(ik,3) + k(ik,3);
+
+    % this conversion is numerically unstable since we add about one meter to thousands of kilometers... should multiply k with a large number!
+    X = ecefS(ik,1) + k(ik,1)*1e4;
+    Y = ecefS(ik,2) + k(ik,2)*1e4;
+    Z = ecefS(ik,3) + k(ik,3)*1e4;
     [n,e,d] = ecef2ned(X, Y, Z, llhgS(ik,1), llhgS(ik,2), llhgS(ik,3), wgs84 ...
                        );
-    kned(ik,:) = [n,e,d];
+    kned(ik,:) = [n,e,d]/1e4;
+
     % make sure that this is a unit vector...
     kned(ik,:) = kned(ik,:)./sqrt(sum(kned(ik,:).^2));
 end

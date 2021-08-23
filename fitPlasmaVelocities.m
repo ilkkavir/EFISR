@@ -18,7 +18,9 @@ function velocity = fitPlasmaVelocities( tres , startTime , gateType ...
 %              number of slices to integrate as a negative integer
 %   startTime  analysis start time as unix time
 %   gateType   type of gating, 'h' or 'mlat'
-%   gateLims   gate limits, km if gateType='h', degrees if gateType='mlat'
+%   gateLims   gate limits, km if gateType='h', altitude limits and degrees if gateType='mlat'
+%              The first two elements are the lower and upper bound and the others are gate limits in degrees of magnetic latitude
+
 %   maxDiff    tolerance for common volume selection. degrees in
 %              geomagnetic coordinates
 %   ViBzero    logical, 0 for normal fit, 1 to force parallel
@@ -54,9 +56,17 @@ function velocity = fitPlasmaVelocities( tres , startTime , gateType ...
 %
 
 % read the velocity data
+if gateType=='h'
+    hlims = [min(gateLims) max(gateLims)];
+elseif gateType=='mlat'
+    hlims = gateLims(1:2);
+else
+    error(['Unknown gate type ' type ]);
+end
+
 [ v , verr , status , chisqr , ts , te , mlt , llhT , llhR , azelR ...
   , r , h , phi , site , ecefS , llhgS , llhmS , kS , B ] = ...
-    readVelocitiesGUISDAP(varargin{:});
+    readVelocitiesGUISDAP(hlims,varargin{:});
 
 % time-slices, indTime contains a time-slice index for each data point
 [ indTime , nTime ] = integrationLimitsTime( ts , te , tres , startTime );
@@ -88,7 +98,6 @@ for iT = 1:nTime
         % use unsuccessful fits
         indGT =  ( indTime == iT ) & ( indGate == iG ) & ~status;
 
-
         % limit the data to magnetic latitudes and longitudes
         % covered by all sites
         indCV = integrationLimitsCommonVolume( llhmS , site , maxDiff ...
@@ -109,7 +118,6 @@ for iT = 1:nTime
 
         % conversion to local geomagnetic coordinates
         kBGT = ecef2localMagnetic( kGT , ecefSGT , llhgSGT , BGT );
-
 
         % if parallel velocity is forced to zero
         if ViBzero

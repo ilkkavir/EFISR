@@ -29,7 +29,6 @@ function param = readParametersFromFileGUISDAP( fpath )
 %   chisqr    chi-squared
 %   ts        integration start time (unix time)
 %   te        integration end time (unix time)
-%   mlt       magnetic local time at integration end time (hours)
 %   llhT      latitude, longitude, height of the transmitter (deg,deg,m)
 %   llhR      latitude, longitude, height of the receiver (deg,deg,m)
 %   azelR     azimuth and elevation angles of the receiver (deg,deg)
@@ -37,6 +36,9 @@ function param = readParametersFromFileGUISDAP( fpath )
 %   h         height (m)
 %   phi       scattering angle (deg)
 %   site      EISCAT site name (char)
+%
+%
+%  the following parameters have been removed from the output on 18 Aug 2021
 %   ecefS     location of the scattering volume(s) in cartesian ecef
 %             (earth-centred earth-fixed) coordinates (m)
 %   llhgS     geodetic coordinates of the scattering volume(s). (deg,deg,m)
@@ -48,6 +50,7 @@ function param = readParametersFromFileGUISDAP( fpath )
 %             cartesian ecef coordinates
 %   B         magnetic field vector in local North-East-Down
 %            coordinates (nT)
+%   mlt       magnetic local time at integration end time (hours)
 %
 %
 % IV 2016
@@ -92,9 +95,11 @@ param.te = repmat( posixtime(datetime(r_time(2,1),r_time(2,2),r_time(2,3),r_time
 
 % transmitter location (lat,lon,height)
 param.llhT = repmat( r_XMITloc , nv , 1 );
+param.llhT(:,3) = param.llhT(:,3)*1000; % height is in km in guisdap files
 
 % receiver location (lat,lon,height)
 param.llhR = repmat( r_RECloc , nv , 1 );
+param.llhR(:,3) = param.llhR(:,3)*1000; % height is in km in guisdap files
 
 % azimuth and elevation of the receiver antenna
 param.azelR = repmat( [ r_az , r_el ] , nv , 1 );
@@ -106,44 +111,47 @@ param.r = r_range.*1000;
 param.h = r_h.*1000;
 
 % scattering angle calculated by GUISDAP
-param.phi = r_SCangle.*180./pi;
+param.phi = repmat( r_SCangle.*180./pi , nv , 1);
 
 % site name
 param.site = repmat( name_site , nv , 1 );
 
-% scattering volume locations etc.
-param.ecefS =  zeros(nv,3);
-param.llhgS =  zeros(nv,3);
-param.llhmS =  zeros(nv,3);
-param.kS    =  zeros(nv,3);
-param.B     =  zeros(nv,3);
-param.mlt   =  zeros(nv,1);
+% % scattering volume locations etc.
+% param.ecefS =  zeros(nv,3);
+% param.llhgS =  zeros(nv,3);
+% param.llhmS =  zeros(nv,3);
+% param.kS    =  zeros(nv,3);
+% param.B     =  zeros(nv,3);
+% param.mlt   =  zeros(nv,1);
 
-% should calculate only unique values like in Daedalus/calculateCoordinatesMadrigal.m!
-for hh = 1:nv
+% % should calculate only unique values like in Daedalus/calculateCoordinatesMadrigal.m!
+% % this is now done for hdf5 data in readVelocitiesGUISDAP. Could remove the following lines and work also with matlab file data there
+% for hh = 1:nv
+    
+%     [param.ecefS(hh,:),param.llhgS(hh,:),param.llhmS(hh,:),param.kS(hh,:)] = ...
+%         systemGeometry2scatteringGeometry(param.llhT(hh,:),param.llhR(hh,:), ...
+%                                           param.azelR(hh,:),param.r(hh), ...
+%                                           datetime(param.ts(hh,:), ...
+%                                                    'ConvertFrom', ...
+%                                                    'posixtime'));
+%     % magnetic field direction from igrf
+%     % maximum altitude of igrf is 600 km...
+%     if param.llhgS(hh,3) <= 600000
+%         try
+%             param.B(hh,:) = igrfmagm( param.llhgS(hh,3) , param.llhgS(hh,1) , param.llhgS(hh,2), ...
+%                                       decyear(r_time(2,:)));
+%         catch
+%             param.B(hh,:) = igrfmagm( param.llhgS(hh,3) , param.llhgS(hh,1) , param.llhgS(hh,2), ...
+%                                       2020);
+%         end
+        
+        
+%         % magnetic local time
+%         param.mlt(hh) = magneticLocalTime(datetime(param.ts(hh,:),'ConvertFrom','posixtime'),param.llhmS(hh,2));
+        
+%     end 
+% end
 
-    [param.ecefS(hh,:),param.llhgS(hh,:),param.llhmS(hh,:),param.kS(hh,:)] = ...
-        systemGeometry2scatteringGeometry(param.llhT(hh,:),param.llhR(hh,:), ...
-                                          param.azelR(hh,:),param.r(hh), ...
-                                          datetime(param.ts(hh,:), ...
-                                                   'ConvertFrom', ...
-                                                   'posixtime'));
-    % magnetic field direction from igrf
-    % maximum altitude of igrf is 600 km...
-    if param.llhgS(hh,3) <= 600000
-        try
-            param.B(hh,:) = igrfmagm( param.llhgS(hh,3) , param.llhgS(hh,1) , param.llhgS(hh,2), ...
-                                      decyear(r_time(2,:)));
-        catch
-            param.B(hh,:) = igrfmagm( param.llhgS(hh,3) , param.llhgS(hh,1) , param.llhgS(hh,2), ...
-                                      2020);
-    end
-
-
-    % magnetic local time
-    param.mlt(hh) = magneticLocalTime(datetime(param.ts(hh,:),'ConvertFrom','posixtime'),param.llhmS(hh,2));
 
 end
 
-
-end

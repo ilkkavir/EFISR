@@ -1,7 +1,7 @@
-function [flist] = listmatfiles( varargin )
+function [flist] = listhdf5files( varargin )
 %
 % given an arbitrary number of directories, concatenate the output
-% structs of dir('*.mat'). The "names" fields are modified to
+% structs of dir('*.hdf5'). The "names" fields are modified to
 % contain full absolute paths to the files
 %
 % INPUT:
@@ -30,7 +30,7 @@ if nd > 0
         % is this a directory?
         if isdir(ddpath)
             % list mat files
-            tmplist = dir(fullfile(ddpath,'*.mat'));
+            tmplist = dir(fullfile(ddpath,'*.hdf5'));
             % convert into full paths
             ntmp = length(tmplist);
             for ff=1:ntmp
@@ -38,13 +38,10 @@ if nd > 0
             end
             % is this a mat-file?
         elseif exist(ddpath,'file')
-            if ddpath(end-3:end) == '.mat'
+            if ddpath(end-4:end) == '.hdf5'
                 tmplist = dir(ddpath);
                 tmplist.name = ddpath;
             end
-        end
-        if ~isempty(tmplist)
-            disp(ddpath)
         end
         % concatenate all directory listings.
         flist = [flist;tmplist];
@@ -52,9 +49,7 @@ if nd > 0
 end
 
 % remove possible duplicates
-if length(flist)>0
-    [ii,ii]=unique({flist.name},'stable');
-    flist=flist(ii);
-end
+[ii,ii]=unique({flist.name},'stable');
+flist=flist(ii);
 
 end

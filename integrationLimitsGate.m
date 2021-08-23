@@ -9,8 +9,9 @@ function [ indGate , nGate ] = integrationLimitsGate( llhg , llhm , ...
 %  llhg    geodetic latitude, longitude, height
 %  llhm    magnetic latitude, longitude, height
 %  type    gating type, 'h' or 'mlat'
-%  limits  gate limits, height in km if type=='h', magnetic
-%          latitudes in degress if type=='mlat'
+%  limits  gate limits, height in km if type=='h', height limits and magnetic
+%          latitudes in degress if type=='mlat'. The first two elements are the lower and upper bound
+%          and the others are gate limits in degrees of magnetic latitude
 %
 %  OUTPUT:
 %   indGate  a vector of gate indices for each data point
@@ -38,7 +39,7 @@ elseif type=='mlat'
     nGate = nGate - 2; % the first two elements are the altitude
                        % limits
     hlims = limits(1:2);
-    limits = limits(2:end);
+    limits = limits(3:end);
 else
     error(['Unknown gate type ' type ]);
 end
