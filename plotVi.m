@@ -1,17 +1,19 @@
-function fighandle = plotEfield( EfVi , varargin )
+function fighandle = plotVi( EfVi , varargin )
 %
-% plotEfield( EfVi )
+% plotVi( EfVi )
 %
-% Plot electric field components as function of time.
+% Plot ion velocity components as function of time. NOTICE: data cleaning done based on the electric field values!
 %
 % INPUT:
 %  EfVi  an output list from fitEfieldVi
 %  other parameters as name-value pairs:
 %    gates indices of height/mlat gates to plot, default: plot all
-%    nlim      y-axis limits for the northward electric field [mV/m], default
-%              [-100 100]
-%    elim      y-axis limits for the eastward electric field [mV/m],
-%              default [-100 100]
+%    nlim      y-axis limits for the northward velocity [m/s], default
+%              [-2000 2000]
+%    elim      y-axis limits for the eastward velocity [m/s],
+%              default [-2000 2000]
+%    falim      y-axis limits for the field-aligned velocity [m/s],
+%              default [-200 200]
 %    glim      y-axis limits for the geographic coordinates plot
 %              [degrees], default [0 180]
 %    mlim      y-axis limits for the magnetic coordinatess plot
@@ -37,11 +39,14 @@ p = inputParser;
 defaultGates = 1:size( EfVi.E , 1 );
 checkGates = @(x) ( isnumeric(x) & all(x>0) & all(x<=size(EfVi.E,1)));
 
-defaultNlim = [-1 1]*100;
+defaultNlim = [-1 1]*2000;
 checkNlim = @(x) (isnumeric(x) & length(x)==2 );
 
-defaultElim = [-1 1]*100;
+defaultElim = [-1 1]*2000;
 checkElim = @(x) (isnumeric(x) & length(x)==2 );
+
+defaultFAlim = [-1 1]*200;
+checkFAlim = @(x) (isnumeric(x) & length(x)==2 );
 
 defaultGlim = [0 180];
 checkGlim = @(x) (isnumeric(x) & length(x)==2 );
@@ -69,6 +74,7 @@ addRequired( p , 'EfVi' , @isstruct ); % data is always required
 addParameter( p , 'gates' , defaultGates , checkGates );
 addParameter( p , 'nlim' , defaultNlim , checkNlim );
 addParameter( p , 'elim' , defaultElim , checkElim );
+addParameter( p , 'falim' , defaultFAlim , checkFAlim );
 addParameter( p , 'glim' , defaultGlim , checkGlim );
 addParameter( p , 'mlim' , defaultMlim , checkMlim );
 addParameter( p , 'stdlim' , defaultStdlim , checkStdlim);
@@ -111,10 +117,12 @@ gnum = p.Results.gates;
 EfViClean = cleanEfield( EfVi , 'stdlim' , p.Results.stdlim , ...
                          'chisqrlim' , p.Results.chisqrlim , 'corrlim' ...
                          , p.Results.corrlim );
-Enorth = EfViClean.E( gnum , : , 1 ) * 1000;
-Eeast =  EfViClean.E( gnum , : , 2 ) * 1000;
-Estdnorth = sqrt( EfViClean.Ecov( gnum , : , 1 , 1 ) ) * 1000;
-Estdeast  = sqrt( EfViClean.Ecov( gnum , : , 2 , 2 ) ) * 1000;
+Vnorth = EfViClean.vel( gnum , : , 1 );
+Veast =  EfViClean.vel( gnum , : , 2 );
+Vfa =  EfViClean.vel( gnum , : , 3 );
+Vstdnorth = sqrt( EfViClean.velcov( gnum , : , 1 , 1 ) );
+Vstdeast  = sqrt( EfViClean.velcov( gnum , : , 2 , 2 ) );
+Vstdfa  = sqrt( EfViClean.velcov( gnum , : , 3 , 3 ) );
 
 % time as datetime
 tt = datetime(EfViClean.time(gnum,:),'convertfrom','posixtime');
@@ -140,8 +148,9 @@ end
 % for error bars (matlab errorbar-function did not prduce
 % satisfactory results...)
 tterr = [tt;tt;[tt(2:end) tt(end)]];
-errnorth = [ Enorth - Estdnorth; Enorth + Estdnorth ; Enorth*NaN];
-erreast = [ Eeast - Estdeast; Eeast + Estdeast ; Eeast*NaN];
+errnorth = [ Vnorth - Vstdnorth; Vnorth + Vstdnorth ; Vnorth*NaN];
+erreast = [ Veast - Vstdeast; Veast + Vstdeast ; Veast*NaN];
+errfa = [ Vfa - Vstdfa; Vfa + Vstdfa ; Vfa*NaN];
 
 % open a figure
 fighandle = figure;
@@ -155,31 +164,43 @@ colAxes = get(gcf,'defaultAxesColorOrder');
 % upper panels for the actual fields
 
 % East component on the first panel
-h1 = subplot(3,1,1);
+h1 = subplot(4,1,1);
 %yyaxis('left')
 plot([min(tt) max(tt)]+[-1 1]*1e4,[0 0],'-k','LineWidth',1)
 hold on
 plot(tterr,erreast,'-','Color','red','LineWidth',1.2);
-plot(tt,Eeast,'LineWidth',1.5,'Color','black');
+plot(tt,Veast,'LineWidth',1.5,'Color','black');
 ylim(p.Results.elim);
 xlim([starttime endtime])
-ylabel('E_{east} [mV/m]')
+ylabel('V_{E} [m/s]')
 grid on
 
 % North component on the second panel
-h2 = subplot(3,1,2);
+h2 = subplot(4,1,2);
 %yyaxis('right')
 plot([min(tt) max(tt)]+[-1 1]*1e4,[0 0],'-k','LineWidth',1)
 hold on
 plot(tterr,errnorth,'-','Color','red','LineWidth',1.2);
-plot(tt,Enorth,'LineWidth',1.5,'Color','black');
+plot(tt,Vnorth,'LineWidth',1.5,'Color','black');
 ylim(p.Results.nlim);
 xlim([starttime endtime])
-ylabel('E_{north} [mV/m]')
+ylabel('V_{N} [m/s]')
+grid on
+
+% Field-aligned component on the third panel
+h3 = subplot(4,1,3);
+%yyaxis('right')
+plot([min(tt) max(tt)]+[-1 1]*1e4,[0 0],'-k','LineWidth',1)
+hold on
+plot(tterr,errfa,'-','Color','red','LineWidth',1.2);
+plot(tt,Vfa,'LineWidth',1.5,'Color','black');
+ylim(p.Results.falim);
+xlim([starttime endtime])
+ylabel('V_{||} [m/s]')
 grid on
 
 % coordinates on the lower panel
-h3 = subplot(3,1,3);
+h4 = subplot(4,1,4);
 
 % geodetic coordinates on the left axis
 yyaxis('left');
@@ -202,11 +223,7 @@ ylabel('Degrees')
 
 legend('WGS84 lat','WGS84 lon','aacgm\_v2 lat','aacgm\_v2 lon' )
 %xlabel(['UTC  ',datestr(datetime(starttime,'convertfrom','posixtime'),'yyyy-mm-dd')])
-if starttime.Day == endtime.Day
-    xlabel(['UTC  ',datestr(starttime,'yyyy-mm-dd')])
-else
-    xlabel(['UTC  ',datestr(starttime,'yyyy-mm-dd') ' -- ' datestr(endtime,'yyyy-mm-dd')])
-end
+xlabel(['UTC  ',datestr(starttime,'yyyy-mm-dd')])
 datetick(h3,'x',13,'keeplimits')
 grid on
 
@@ -217,16 +234,19 @@ drawnow
 % figure settings...
 set( h1 , 'XTickLabel' , '' ) % remove x-axis ticks from the upper panels
 set( h2 , 'XTickLabel' , '' ) % remove x-axis ticks from the upper panels
+set( h3 , 'XTickLabel' , '' ) % remove x-axis ticks from the upper panels
 pos1 = get( h1 , 'Position' ); % position of the first panel
 pos2 = get( h2 , 'Position' ); % position of the second panel
 pos3 = get( h3 , 'Position' ); % position of the third panel
+pos4 = get( h4 , 'Position' ); % position of the fourth panel
 
 % remove empty space from between subplots
 set( h1 , 'Position' , [ pos1(1:2)-[0,.07] [1,1.15].*pos1(3:4)] );
 set( h2 , 'Position' , [ pos2(1:2)-[0,.07]./2 [1,1.15].*pos1(3:4)] );
 set( h3 , 'Position' , [ pos3(1:2) [1,1.15].*pos1(3:4)] );
-set( h1 , 'XTick' , get(h3,'XTick'))
-set( h2 , 'XTick' , get(h3,'XTick'))
+set( h1 , 'XTick' , get(h4,'XTick'))
+set( h2 , 'XTick' , get(h4,'XTick'))
+set( h3 , 'XTick' , get(h4,'XTick'))
 
 % MLT ticks on the top panel
 % the interpolation fails when the x axis is longer than the data vector
@@ -253,10 +273,11 @@ end
 set(h1,'XAxisLocation','top','XTickLabel', cellstr(num2str(mltticks,'%5.2f')))
 xlabel(h1,'MLT (aacgm\_v2)')
 
-set(h1,'fontsize',12)
-set(h2,'fontsize',12)
-set(h3,'fontsize',12)
-linkaxes([h1 h2 h3],'x')
+set(h1,'fontsize',10)
+set(h2,'fontsize',10)
+set(h3,'fontsize',10)
+set(h4,'fontsize',10)
+linkaxes([h1 h2 h3 h4],'x')
 
 drawnow
 end

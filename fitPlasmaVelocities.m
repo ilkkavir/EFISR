@@ -37,7 +37,7 @@ function velocity = fitPlasmaVelocities( tres , startTime , gateType ...
 %  velocity  a struct with fields
 %
 %   vel       nGate x nTime x 3 array of velocity vectors (m/s) in
-%             local NED-coordinates
+%             local geomagnetic NED-coordinates
 %   velcov    nGate x nTime x 3 x 3 array of error covariance
 %             matrices (m^2/s^2)
 %   chisqr    chi-squared of the velocity fit
@@ -49,7 +49,7 @@ function velocity = fitPlasmaVelocities( tres , startTime , gateType ...
 %   time      nGate x nTime array of times (unix time)
 %   mlt       nGate x nTime array of magnetic local times (hours)
 %   Bned      nGate x nTime x 3 array of magnetic field vectors. nT
-%             in local cartesian north-east-down coordinates.
+%             in local cartesian geodetic north-east-down coordinates.
 %   tlims     nGate x nTime x 2 array of integration time limits (unix time)
 %
 % IV 2016

@@ -35,7 +35,7 @@ function [v,verr,status,chisqr,ts,te,mlt,llhT,llhR,azelR,r,h,phi,site,ecefS,llhg
 %            - Re)
 %  kS        scattering wave vector direction(s) (unit vector(s)) in
 %            cartesian ecef coordinates
-%  B         magnetic field vector in local North-East-Down
+%  B         magnetic field vector in local geodetic North-East-Down
 %            coordinates (nT)
 %
 %
@@ -69,6 +69,12 @@ llhgS = [];
 llhmS = [];
 kS = [];
 B = [];
+
+% these are for the Millstone data.
+% notice: works only for the one experiment we have studied, probably noto with the others.
+pulse_length = [];
+pulse_code = [];
+
 
 % read all mat files
 fpath = listmatfiles(varargin{:});
@@ -145,31 +151,109 @@ if isstruct(fpath)
         if readThisFile
             %Ne,NeStd,Ti,TiStd,Tr,TrStd,Coll,CollStd,Vi,Vistd,Comp,CompStd,status,chisqr,ts,te,mlt,llhT,llhR,azelR,r,h,phi,site,ecefS,llhgS,llhmS,kS,B
             %            disp(fpath(ff).name)
-            
-            [data, metadata] = load_EISCAT_hdf5(fpath(ff).name);
-            
-            nt = length(data.datenum_1(:));
-            nv = size(data.v_i_los,1);
-            
-            for tt = 1:nt
-                % in hdf5 files velocity is positive away
-                v = [ v ; -data.v_i_los(:,tt)];
-                verr = [ verr ; data.v_i_los_err(:,tt) ];
-                status = [ status ; data.status(:,tt) ];
-                chisqr = [chisqr ; data.residual(:,tt) ];
+
+            % try to read assuming that this is an EISCAT hdf5 file
+            try 
                 
-                ts = [ ts ; repmat(posixtime(datetime(data.datenum_1(tt),'convertfrom','datenum')),nv,1) ];
-                te = [ te ; repmat(posixtime(datetime(data.datenum_2(tt),'convertfrom','datenum')),nv,1) ];
+                [data, metadata] = load_EISCAT_hdf5(fpath(ff).name);
+
+                nt = length(data.datenum_1(:));
+                nv = size(data.v_i_los,1);
+
+                % these are sometimes 0d in remote data..
+                if length(data.status)==1
+                    data.status = ones(1,nt)*data.status;
+                end
+                if length(data.range)==1
+                    data.range = ones(1,nt)*data.range;
+                end
                 
-                llhT = [ llhT ; repmat([data.r_XMITloc1 data.r_XMITloc2 data.r_XMITloc3],nv,1) ];
-                llhR = [ llhR ; repmat([data.r_RECloc1 data.r_RECloc2 data.r_RECloc3],nv,1) ];
-                azelR = [ azelR ; repmat([data.az(tt) data.el(tt)],nv,1) ];
-                r = [ r ; data.range(:,tt)*1000 ];
-                h = [ h ; data.height(:,tt)*1000 ];
-                phi = [ phi ; repmat(data.r_SCangle.*180./pi,nv,1)];
-                site = [ site ; repmat(metadata.name_site,nv,1) ];
-                
-            end                    
+                for tt = 1:nt
+
+                    % in hdf5 files velocity is positive away
+                    v = [ v ; -data.v_i_los(:,tt)];
+                    verr = [ verr ; data.v_i_los_err(:,tt) ];
+                    status = [ status ; data.status(:,tt) ];
+                    chisqr = [chisqr ; data.residual(:,tt) ];
+                    
+                    ts = [ ts ; repmat(posixtime(datetime(data.datenum_1(tt),'convertfrom','datenum')),nv,1) ];
+                    te = [ te ; repmat(posixtime(datetime(data.datenum_2(tt),'convertfrom','datenum')),nv,1) ];
+                    
+                    llhT = [ llhT ; repmat([data.r_XMITloc1 data.r_XMITloc2 data.r_XMITloc3],nv,1) ];
+                    llhR = [ llhR ; repmat([data.r_RECloc1 data.r_RECloc2 data.r_RECloc3],nv,1) ];
+                    azelR = [ azelR ; repmat([data.az(tt) data.el(tt)],nv,1) ];
+                    r = [ r ; data.range(:,tt)*1000 ];
+                    h = [ h ; data.height(:,tt)*1000 ];
+                    phi = [ phi ; repmat(data.r_SCangle.*180./pi,nv,1)];
+                    site = [ site ; repmat(metadata.name_site,nv,1) ];
+                    
+                end
+
+                % if the read failed this might be a Millstone Hill file
+                % (ugly, should identify the files before reading.. )
+                % this is merely a hack to read the data in once, should be improved for routine use
+            catch
+
+
+                disp('EISCAT reads failed, testing for Millstone Hill data')
+                disp('warning: this works only for a very limited set of experiments')
+
+                [data, metadata] = load_mho_hdf5(fpath(ff).name);
+
+                ncode = length(data);
+
+                for icode = 1:ncode
+                    
+                    nt = length(data(icode).variables.timestamps(:));
+                    nv = size(data(icode).variables.v_i_los,1);
+                    
+                    for tt = 1:nt
+                        % in hdf5 files velocity is positive away
+                        v = [ v ; -data(icode).variables.v_i_los(:,tt)];
+                        verr = [ verr ; data(icode).variables.v_i_los_err(:,tt) ];
+                        status = [ status ; ~(data(icode).variables.FIT_TYPE(:,tt)~=0) ]; % status 0 is a failed fit at mlh
+                        chisqr = [chisqr ; data(icode).variables.RESIDUAL(:,tt) ];
+
+                        % the start and end times must be somewhere, but let us try with these timestamps first
+                        ts = [ ts ; repmat(posixtime(datetime(data(icode).variables.timestamps(tt),'convertfrom','datenum')),nv,1) ];
+                        te = [ te ; repmat(posixtime(datetime(data(icode).variables.timestamps(tt),'convertfrom','datenum')),nv,1) ];
+                        
+                        llhT = [ llhT ; repmat([42.619 288.51 0.146],nv,1) ];
+                        llhR = [ llhR ; repmat([42.619 288.51 0.146],nv,1) ];
+                        azelR = [ azelR ; repmat([data(icode).variables.AZ1(tt)+data(icode).variables.AZ2(tt) data(icode).variables.EL1(tt)+data(icode).variables.EL2(tt)]./2,nv,1) ];
+                        r = [ r ; data(icode).variables.RANGE(:,tt)*1000 ];
+                        h = [ h ; data(icode).variables.HEIGHT(:,tt)*1000 ];
+                        phi = [ phi ; repmat(90,nv,1)]; % monostatic radar
+                        site = [ site ; repmat(data(icode).antenna(1),nv,1) ];
+                        pulse_length = [pulse_length ; repmat(data(icode).pulse_length,nv,1)];
+                        pulse_code = [pulse_code ; repmat(data(icode).pulse_code(1),nv,1)];
+                    end
+                end
+
+
+                if true
+                okcode = (pulse_length==480) & (pulse_code=='s');
+
+                v = v(okcode);
+                verr = verr(okcode);
+                status = status(okcode);
+                chisqr = chisqr(okcode);
+                ts = ts(okcode);
+                te = te(okcode);
+                llhT = llhT(okcode,:);
+                llhR = llhR(okcode,:);
+                azelR = azelR(okcode,:);
+                r = r(okcode);
+                h = h(okcode);
+                phi = phi(okcode);
+                site = site(okcode);
+                pulse_length = pulse_length(okcode);
+                pulse_code = pulse_code(okcode);
+
+                te(site=='m') = te(site=='m')+240;
+                te(site=='z') = te(site=='z')+180;
+                end
+            end
             
         end
     end
@@ -181,6 +265,7 @@ inan = isnan(v) | isnan(verr) | isnan(status) | isnan(chisqr) | isnan(ts) | isna
 iheight = (h/1000 >= hlims(1)) & (h/1000 <= hlims(2));
 
 ikeep  = iheight & ~inan;
+
 
 % v(inan) = [];
 % verr(inan) = [];
@@ -212,24 +297,24 @@ site = site(ikeep);
 
 if length(r)>0
 
-    %    posmerged = round( [llhT(:,1)*100 llhT(:,2)*100 llhT(:,3)/1000 llhR(:,1)*100 llhR(:,2)*100 llhR(:,3)/1000 azelR*10 r/1000] );
-    posmerged = [llhT(:,1) llhT(:,2) llhT(:,3) llhR(:,1) llhR(:,2) llhR(:,3) azelR r];
+    posmerged = round( [llhT(:,1)*100 llhT(:,2)*100 llhT(:,3)/1000 llhR(:,1)*100 llhR(:,2)*100 llhR(:,3)/1000 azelR*10 r/1000] );
+    %posmerged = [llhT(:,1) llhT(:,2) llhT(:,3) llhR(:,1) llhR(:,2) llhR(:,3) azelR r];
 
     posunique = unique(posmerged,'rows');
 
     nunique = size(posunique,1);
     
     for iu = 1:nunique
-        % [ecefStmp,llhgStmp,llhmStmp,kStmp] = systemGeometry2scatteringGeometry(...
-        %     posunique(iu,1:3).*[.01 .01 1000],...
-        %     posunique(iu,4:6).*[.01 .01 1000],...
-        %     posunique(iu,7:8).*.1,posunique(iu,9).*1000,...
-        %     datetime(ts(1),'convertfrom','posixtime'));
         [ecefStmp,llhgStmp,llhmStmp,kStmp] = systemGeometry2scatteringGeometry(...
-            posunique(iu,1:3),...
-            posunique(iu,4:6),...
-            posunique(iu,7:8),posunique(iu,9),...
+            posunique(iu,1:3).*[.01 .01 1000],...
+            posunique(iu,4:6).*[.01 .01 1000],...
+            posunique(iu,7:8).*.1,posunique(iu,9).*1000,...
             datetime(ts(1),'convertfrom','posixtime'));
+        % [ecefStmp,llhgStmp,llhmStmp,kStmp] = systemGeometry2scatteringGeometry(...
+        %     posunique(iu,1:3),...
+        %     posunique(iu,4:6),...
+        %     posunique(iu,7:8),posunique(iu,9),...
+        %     datetime(ts(1),'convertfrom','posixtime'));
         Btmp = [0 0 0];
         if llhgStmp(3) <= 600000
             try
