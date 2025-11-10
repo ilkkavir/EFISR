@@ -1,7 +1,0 @@
-function [ indCV ] = integrationLimitsCommonVolume( llhm , site , ...
-                                                  maxDiff )
-
-
-
-
-end
